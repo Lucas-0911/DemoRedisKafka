@@ -1,0 +1,29 @@
+server:
+  port: 8888
+
+spring:
+  #Kafka
+  kafka:
+    bootstrap-servers: 108.181.157.249:10011
+    producer:
+      retries: 0
+      batch-size: 16384
+      buffer-memory: 33554432
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: demoRedisKafka
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      auto-commit-interval: 100
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+#
+#    admin:
+#      ssl:
+#        key-store-password: jZDXbn0E
+#        trust-store-password: jZDXbn0E
+
+
