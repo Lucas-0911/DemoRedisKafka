@@ -8,6 +8,7 @@ import com.lucas.service.utils.RedisUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -22,16 +23,21 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private RedisUtils redisUtils;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public boolean createAccount(AccountSignupRequest accountSignupRequest) {
-
         try {
             //Todo: Check is exits by username in redis
 
+            // Mã hóa mật khẩu trước khi lưu vào database
+            String encodedPassword = passwordEncoder.encode(accountSignupRequest.getPassword());
+            
             Accounts createAccount = Accounts.builder()
                     .username(accountSignupRequest.getUsername())
-                    .password(accountSignupRequest.getPassword())
+                    .password(encodedPassword) // Sử dụng mật khẩu đã mã hóa
                     .build();
 
             createAccount = authRepository.save(createAccount);
@@ -51,11 +57,9 @@ public class AuthServiceImpl implements AuthService {
     public boolean activeAccount(String username) {
         log.info(username);
         Accounts accounts = (authRepository.findByUsername(username).orElse(null));
-
         if (accounts == null) {
             return false;
         }
-
         // Send message kafka
         kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + accounts.getId());
         return true;
