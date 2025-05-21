@@ -28,7 +28,7 @@ public class WorkerConsumer {
 
         Accounts entity = redisUtils.getObject(key, Accounts.class);
         log.info("Entity: {}", entity);
-
+        redisUtils.delete(key);
         try {
             String sql = "UPDATE `accounts` SET status = ?, updated = ? WHERE id = ?";
 
@@ -39,7 +39,7 @@ public class WorkerConsumer {
                     .executeUpdate();
 
             Accounts accountUpdate = entityManager.find(Accounts.class, entity.getId());
-
+            redisUtils.setObject(key, accountUpdate);
             log.info("Updated record count: {}", accountUpdate);
         } catch (Exception e) {
             e.printStackTrace();

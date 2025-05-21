@@ -26,6 +26,17 @@ public class RedisUtils {
         }
     }
 
+    public void setObject(String key, Object value, long timeout) {
+        if (!StringUtils.hasLength(key)) {
+            return;
+        }
+        try {
+            redisTemplate.opsForValue().set(key, value, timeout);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public <T> T getObject(String key, Class<T> targetClass) {
         Object result = redisTemplate.opsForValue().get(key);
         if (result == null) {

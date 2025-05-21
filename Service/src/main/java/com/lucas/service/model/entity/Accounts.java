@@ -43,7 +43,7 @@ public class Accounts {
     @CreationTimestamp
     private Date updated;
 
-    enum Status {
+    public enum Status {
         CREATE, ACTIVE, LOCKED;
     }
 
