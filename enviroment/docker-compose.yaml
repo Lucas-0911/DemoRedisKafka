@@ -1,5 +1,5 @@
 networks:
-  tts:
+  demo-redis-kafka:
     driver: bridge
 
 services:
@@ -21,16 +21,16 @@ services:
     ports:
       - "3316:3306"
     networks:
-      - tts
+      - demo-redis-kafka
 
   #Redis
   redis:
     container_name: redis
     image: redis:latest
     ports:
-      - "6318:6379"
+      - "6319:6379"
     networks:
-      - tts
+      - demo-redis-kafka
 
   #Kafka
   # Kafka visualization tool
@@ -43,11 +43,11 @@ services:
       kafka1:
         condition: service_healthy
     environment:
-      KAFKA_CLUSTERS_0_NAME: env-ddd      # Cluster name
+      KAFKA_CLUSTERS_0_NAME: demo-redis-kafka      # Cluster name
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:9092  # Cluster bootstrap servers
       DYNAMIC_CONFIG_ENABLED: 'true'
-  #    networks:
-  #      - local-network-2025
+    networks:
+      - demo-redis-kafka
 
   # Kafka cluster
   kafka1:
@@ -89,13 +89,10 @@ services:
       - KAFKA_CFG_NODE_ID=1
     volumes:
       - ./data/bitnami/kafka1:/bitnami/kafka
-    #    networks:
-    #      - local-network-2025
     healthcheck:
       test: [ "CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092" ]
       interval: 5s
       timeout: 10s
       retries: 10
-  #networks:
-  #  local-network-2025:
-  #    driver: bridge
+    networks:
+      - demo-redis-kafka

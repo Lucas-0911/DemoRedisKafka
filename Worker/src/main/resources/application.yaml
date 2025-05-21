@@ -4,7 +4,7 @@ server:
 spring:
   #Kafka
   kafka:
-    bootstrap-servers: 108.181.157.249:10011
+    bootstrap-servers: 192.168.1.48:9193
     producer:
       retries: 0
       batch-size: 16384
@@ -20,10 +20,40 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
-#
-#    admin:
-#      ssl:
-#        key-store-password: jZDXbn0E
-#        trust-store-password: jZDXbn0E
 
+  #DBS
+  datasource:
+    hikari:
+      maximum-pool-size: 10  # So luong toi da ket noi
+      minimum-idle: 5        #  So luong ket noi toi thieu trong pool
+    url: jdbc:mysql://localhost:3316/demo-redis-kafka
+    username: root
+    password: root1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+
+  jpa:
+    database: mysql
+    show-sql: true
+    hibernate:
+      ddl-auto: update  # Khong tu dong tao/ cap nhat bang thay vi update
+      properties:
+        hibernate:
+          format_sql: true
+          use_sql_comments: true
+  jackson:
+    serialization:
+      indent-output: true
+
+  # Redis server connection settings
+  #  data:
+  #    redis:
+  #      host: redis-12754.c1.ap-southeast-1-1.ec2.redns.redis-cloud.com # Host of the Redis server
+  #      port: 12754 # Port of the Redis server for connection
+  #      password: "eV1rqBUEPzcZd1WJoZZwV9tbwZLhRJTe"  # Password for connecting to the Redis server (default is empty)
+  data:
+    redis:
+      host: 127.0.0.1 # Host of the Redis server
+      port: 6319 # Port of the Redis server for connection
+      password: ""  # Password for connecting to the Redis server (default is empty)
 

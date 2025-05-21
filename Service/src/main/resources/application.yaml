@@ -15,29 +15,37 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
 
+  #JPA
   jpa:
-    database: mysql
-    show-sql: true
     hibernate:
-      ddl-auto: update  # Khong tu dong tao/ cap nhat bang thay vi update
-      properties:
-        hibernate:
-          format_sql: true
-          use_sql_comments: true
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Time
   jackson:
+    time-zone: GMT+7 # Cau hinh gio
     serialization:
       indent-output: true
 
   # Redis server connection settings
+  #  data:
+  #    redis:
+  #      host: redis-12754.c1.ap-southeast-1-1.ec2.redns.redis-cloud.com # Host of the Redis server
+  #      port: 12754 # Port of the Redis server for connection
+  #      password: "eV1rqBUEPzcZd1WJoZZwV9tbwZLhRJTe"  # Password for connecting to the Redis server (default is empty)
   data:
     redis:
-      host: redis-12754.c1.ap-southeast-1-1.ec2.redns.redis-cloud.com # Host of the Redis server
-      port: 12754 # Port of the Redis server for connection
-      password: "eV1rqBUEPzcZd1WJoZZwV9tbwZLhRJTe"  # Password for connecting to the Redis server (default is empty)
+      host: 127.0.0.1 # Host of the Redis server
+      port: 6319 # Port of the Redis server for connection
+      password: ""  # Password for connecting to the Redis server (default is empty)
 
   #Kafka
   kafka:
-    bootstrap-servers: 108.181.157.249:10011
+    bootstrap-servers: 192.168.1.48:9193
     producer:
       retries: 0
       batch-size: 16384
@@ -53,3 +61,8 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

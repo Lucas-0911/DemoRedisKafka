@@ -1,8 +1,7 @@
 package com.lucas.service.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lucas.service.model.entity.User;
-import com.lucas.service.model.request.UserSignupRequest;
+import com.lucas.service.model.entity.Accounts;
+import com.lucas.service.model.request.AccountsSignupRequest;
 import com.lucas.service.repository.AuthRepository;
 import com.lucas.service.service.AuthService;
 import com.lucas.service.utils.RedisUtils;
@@ -19,25 +18,27 @@ public class AuthServiceImpl implements AuthService {
     private AuthRepository authRepository;
 
     @Autowired
-    private KafkaTemplate<String, Long> kafkaTemplate;
+    private KafkaTemplate<String, String> kafkaTemplate;
 
     @Autowired
     private RedisUtils redisUtils;
 
     @Override
-    public boolean createAccount(UserSignupRequest userSignupRequest) {
+    public boolean createAccount(AccountsSignupRequest accountsSignupRequest) {
 
         try {
-            User user = User.builder().username(userSignupRequest.getUsername()).password(userSignupRequest.getPassword()).build();
-            user = authRepository.save(user);
-            // Success
-            // Set cache : userSignupRequest.getUsername();
-            ObjectMapper mapper = new ObjectMapper();
-            String a = mapper.writeValueAsString(user);
-            redisUtils.setObject("user:" + user.getId(), user);
-            // Thread.sleep(5 * 1000);
-            // Send message kafka
-            kafkaTemplate.send("USER", user.getId());
+            //Todo: Check is exits by username in redis
+
+            Accounts createAccount = Accounts.builder()
+                    .username(accountsSignupRequest.getUsername())
+                    .password(accountsSignupRequest.getPassword())
+                    .build();
+
+            createAccount = authRepository.save(createAccount);
+
+            //Set redis
+            redisUtils.setObject("ACCOUNT:" + createAccount.getId(), createAccount);
+
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -45,9 +46,16 @@ public class AuthServiceImpl implements AuthService {
             return false;
         }
     }
-//
-//    @Override
-//    public boolean createAccount(UserSignupRequest userSignupRequest) {
-//        return false;
-//    }
+
+    @Override
+    public boolean activeAccount(String username) {
+        log.info(username);
+        Accounts accounts = (authRepository.findByUsername(username).orElse(null));
+        if (accounts == null) {
+            return false;
+        }
+        // Send message kafka
+        kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + accounts.getId());
+        return true;
+    }
 }

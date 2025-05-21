@@ -1,7 +1,9 @@
 package com.lucas.service.service;
 
-import com.lucas.service.model.request.UserSignupRequest;
+import com.lucas.service.model.request.AccountsSignupRequest;
 
 public interface AuthService {
-    boolean createAccount(UserSignupRequest userSignupRequest);
+    boolean createAccount(AccountsSignupRequest accountsSignupRequest);
+
+    boolean activeAccount(String username);
 }
