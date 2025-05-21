@@ -1,7 +1,7 @@
 package com.lucas.service.service.impl;
 
 import com.lucas.service.model.entity.Accounts;
-import com.lucas.service.model.request.AccountsSignupRequest;
+import com.lucas.service.model.request.AccountSignupRequest;
 import com.lucas.service.repository.AuthRepository;
 import com.lucas.service.service.AuthService;
 import com.lucas.service.utils.RedisUtils;
@@ -24,14 +24,14 @@ public class AuthServiceImpl implements AuthService {
     private RedisUtils redisUtils;
 
     @Override
-    public boolean createAccount(AccountsSignupRequest accountsSignupRequest) {
+    public boolean createAccount(AccountSignupRequest accountSignupRequest) {
 
         try {
             //Todo: Check is exits by username in redis
 
             Accounts createAccount = Accounts.builder()
-                    .username(accountsSignupRequest.getUsername())
-                    .password(accountsSignupRequest.getPassword())
+                    .username(accountSignupRequest.getUsername())
+                    .password(accountSignupRequest.getPassword())
                     .build();
 
             createAccount = authRepository.save(createAccount);
@@ -51,9 +51,11 @@ public class AuthServiceImpl implements AuthService {
     public boolean activeAccount(String username) {
         log.info(username);
         Accounts accounts = (authRepository.findByUsername(username).orElse(null));
+
         if (accounts == null) {
             return false;
         }
+
         // Send message kafka
         kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + accounts.getId());
         return true;
