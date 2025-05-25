@@ -3,6 +3,7 @@ package com.lucas.service.controller;
 import com.lucas.service.model.dto.ResponseDTO;
 import com.lucas.service.model.dto.TokenDTO;
 import com.lucas.service.model.request.AccountSignupRequest;
+import com.lucas.service.model.request.TokenValidationRequest;
 import com.lucas.service.service.AuthService;
 import com.lucas.service.utils.ResponseUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,7 +39,7 @@ public class AuthController {
     @GetMapping("/active/{username}")
     public ResponseEntity<ResponseDTO<Boolean>> activeAccount(@PathVariable String username, HttpServletRequest request) {
         boolean result = authService.activeAccount(username);
-        
+
         if (result) {
             return ResponseUtils.success(true, "Kích hoạt tài khoản thành công", request);
         } else {
@@ -54,6 +55,20 @@ public class AuthController {
             return ResponseUtils.success(tokenDTO, "Đăng nhập thành công", httpRequest);
         } else {
             return ResponseUtils.badRequest("Đăng nhập thất bại", httpRequest);
+        }
+    }
+
+    // Thêm endpoint này vào AuthController
+    @PostMapping("/validate-token")
+    public ResponseEntity<ResponseDTO<Boolean>> validateToken(@RequestBody TokenValidationRequest request, HttpServletRequest httpRequest) {
+        log.info("Request: {}", request);
+
+        boolean isValid = authService.validateToken(request.getToken(), request.getUsername());
+
+        if (isValid) {
+            return ResponseUtils.success(true, "Token hợp lệ", httpRequest);
+        } else {
+            return ResponseUtils.badRequest("Token không hợp lệ hoặc không khớp với username", httpRequest);
         }
     }
 }

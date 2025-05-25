@@ -6,6 +6,7 @@ import com.lucas.service.model.request.AccountSignupRequest;
 import com.lucas.service.repository.AuthRepository;
 import com.lucas.service.service.AuthService;
 import com.lucas.service.utils.RedisUtils;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +44,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RSAPrivateKey rsaPrivateKey;
+
+    @Autowired
+    private RSAPublicKey rsaPublicKey;
 
     @Override
     public boolean createAccount(AccountSignupRequest accountSignupRequest) {
@@ -135,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
                 .setIssuedAt(new Date())
                 .setExpiration(expirationDate)
                 .setClaims(claims)
-                .signWith(SignatureAlgorithm.RS256, "123456")
+                .signWith(SignatureAlgorithm.RS256, rsaPrivateKey)
                 .compact();
     }
 
@@ -151,7 +160,25 @@ public class AuthServiceImpl implements AuthService {
                 .setIssuedAt(new Date())
                 .setExpiration(expirationDate)
                 .claim("tokenType", "refresh")
-                .signWith(SignatureAlgorithm.HS256, "123456")
+                .signWith(SignatureAlgorithm.RS256, rsaPrivateKey)
                 .compact();
+    }
+
+    @Override
+    public boolean validateToken(String token, String username) {
+        try {
+            // Xác thực token bằng khóa công khai
+            Claims claims = Jwts.parser()
+                    .setSigningKey(rsaPublicKey)
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            // Kiểm tra username trong token có khớp với username được cung cấp không
+            String tokenUsername = (String) claims.get("username");
+            return username.equals(tokenUsername);
+        } catch (Exception e) {
+            log.error("Lỗi khi xác thực token: {}", e.getMessage());
+            return false;
+        }
     }
 }

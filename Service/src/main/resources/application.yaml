@@ -45,7 +45,8 @@ spring:
 
   #Kafka
   kafka:
-    bootstrap-servers: 192.168.1.48:9193
+    #    bootstrap-servers: 192.168.1.48:9193
+    bootstrap-servers: 192.168.100.222:9193
     producer:
       retries: 0
       batch-size: 16384
@@ -69,5 +70,9 @@ logging:
 
 
 jwt:
-  expirationTimeToken: 24 * 60 * 60 * 1000 # 1 ngay
-  expirationTimeRefreshToken: 7 * 24 * 60 * 60 * 1000 # 7 ngay
+  expirationTimeToken: 86400000 # 1 ngay
+  expirationTimeRefreshToken: 604800000 # 7 ngay
+
+rsa:
+  private-key: classpath:certs/private.pem
+  public-key: classpath:certs/public.pem
