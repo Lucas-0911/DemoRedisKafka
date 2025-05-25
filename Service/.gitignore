@@ -36,3 +36,7 @@ build/
 
 ## Cert
 src/main/resources/certs
+
+mvnw.cmd
+mvnw
+.gitattributes
