@@ -88,6 +88,11 @@ public class AuthServiceImpl implements AuthService {
         return true;
     }
 
+    /**
+     *
+     * @param request
+     * @return TokenDTO
+     */
     @Override
     public TokenDTO login(AccountSignupRequest request) {
         try {
@@ -127,7 +132,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Tạo access token
+     *
+     * @param account
+     * @return token
      */
     private String generateAccessToken(Accounts account) {
 
@@ -149,7 +156,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Tạo refresh token
+     * generateRefreshToken
+     * @param account
+     * @return refreshToken
      */
     private String generateRefreshToken(Accounts account) {
         Date expirationDate = new Date(System.currentTimeMillis() + expirationTimeRefreshToken);
@@ -164,6 +173,13 @@ public class AuthServiceImpl implements AuthService {
                 .compact();
     }
 
+
+    /**
+     * validate token jwt
+     * @param token
+     * @param username
+     * @return boolean
+     */
     @Override
     public boolean validateToken(String token, String username) {
         try {

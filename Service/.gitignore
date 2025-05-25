@@ -33,3 +33,6 @@ build/
 .vscode/
 
 .mvn
+
+## Cert
+src/main/resources/certs
