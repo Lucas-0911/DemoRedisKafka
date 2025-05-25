@@ -5,6 +5,8 @@ import com.lucas.service.model.request.AccountSignupRequest;
 
 public interface AuthService {
     boolean createAccount(AccountSignupRequest accountSignupRequest);
+
     boolean activeAccount(String username);
-    TokenDTO login(String username);
+
+    TokenDTO login(AccountSignupRequest request);
 }

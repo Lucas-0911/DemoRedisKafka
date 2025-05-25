@@ -9,16 +9,26 @@ import com.lucas.service.utils.RedisUtils;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
+
+    @Value("${jwt.expirationTimeToken}")
+    private long expirationTimeToken;
+
+    @Value("${jwt.expirationTimeRefreshToken}")
+    private long expirationTimeRefreshToken;
 
     @Autowired
     private AuthRepository authRepository;
@@ -52,8 +62,7 @@ public class AuthServiceImpl implements AuthService {
 
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error(ExceptionUtils.getStackTrace(e));
             return false;
         }
     }
@@ -71,20 +80,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public TokenDTO login(String username) {
+    public TokenDTO login(AccountSignupRequest request) {
         try {
-            // Tìm kiếm tài khoản theo username
-            Accounts account = authRepository.findByUsername(username).orElse(null);
+            // Kiểm tra username và password
+            Accounts account = authRepository.findByUsername(request.getUsername()).orElse(null);
 
-            // Kiểm tra tài khoản tồn tại
-            if (account == null) {
-                log.error("Tài khoản không tồn tại: {}", username);
+            if (account == null || !passwordEncoder.matches(request.getPassword(), account.getPassword())) {
                 return null;
             }
 
             // Kiểm tra trạng thái tài khoản
-            if (account.getStatus() == Accounts.Status.ACTIVE) { // Giả sử 1 là trạng thái đã kích hoạt
-                log.error("Tài khoản chưa được kích hoạt: {}", username);
+            if (account.getStatus() == Accounts.Status.CREATE) {
+                log.error("Tài khoản chưa được kích hoạt: {}", request.getUsername());
                 return null;
             }
 
@@ -114,18 +121,21 @@ public class AuthServiceImpl implements AuthService {
      * Tạo access token
      */
     private String generateAccessToken(Accounts account) {
-        // Thời gian hết hạn: 24 giờ
-        long expirationTime = 24 * 60 * 60 * 1000; // milliseconds
-        Date expirationDate = new Date(System.currentTimeMillis() + expirationTime);
+
+        Date expirationDate = new Date(System.currentTimeMillis() + expirationTimeToken);
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("username", account.getUsername());
+        claims.put("password", account.getPassword());
+        claims.put("userId", account.getId());
 
         // Tạo JWT token
         return Jwts.builder()
                 .setSubject(account.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(expirationDate)
-                .claim("userId", account.getId())
-                .claim("username", account.getUsername())
-                .signWith(SignatureAlgorithm.HS256, "123456")
+                .setClaims(claims)
+                .signWith(SignatureAlgorithm.RS256, "123456")
                 .compact();
     }
 
@@ -133,9 +143,7 @@ public class AuthServiceImpl implements AuthService {
      * Tạo refresh token
      */
     private String generateRefreshToken(Accounts account) {
-        // Thời gian hết hạn: 7 ngày
-        long expirationTime = 7 * 24 * 60 * 60 * 1000; // milliseconds
-        Date expirationDate = new Date(System.currentTimeMillis() + expirationTime);
+        Date expirationDate = new Date(System.currentTimeMillis() + expirationTimeRefreshToken);
 
         // Tạo JWT token
         return Jwts.builder()
