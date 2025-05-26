@@ -4,8 +4,7 @@ server:
 spring:
   #Kafka
   kafka:
-    bootstrap-servers: 192.168.1.126:9193
-    #    bootstrap-servers: 192.168.100.222:9193
+    bootstrap-servers: 192.168.100.228:9193
     producer:
       retries: 0
       batch-size: 16384

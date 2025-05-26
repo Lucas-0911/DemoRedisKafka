@@ -7,14 +7,14 @@ import com.lucas.service.repository.AuthRepository;
 import com.lucas.service.service.AuthService;
 import com.lucas.service.utils.JWTUtils;
 import com.lucas.service.utils.RedisUtils;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-@Slf4j
+@Log4j2
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -37,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean createAccount(AccountSignupRequest accountSignupRequest) {
         try {
+            log.info("Create account : {}", accountSignupRequest);
             //Todo: Check is exits by username in redis
 
             // Mã hóa mật khẩu trước khi lưu vào database
@@ -54,22 +55,25 @@ public class AuthServiceImpl implements AuthService {
 
             return true;
         } catch (Exception e) {
-            log.error(ExceptionUtils.getStackTrace(e));
+            log.error("Loi khi tao tai khoan: {}", ExceptionUtils.getStackTrace(e));
             return false;
         }
     }
 
     @Override
     public boolean activeAccount(String username) {
-        log.info(username);
-        Accounts accounts = (authRepository.findByUsername(username).orElse(null));
-        if (accounts == null) {
-            return false;
-        }
-        // Send message kafka
-        kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + accounts.getId());
-        return true;
+        log.info("Activating account: {}", username);
+        return authRepository.findByUsername(username)
+                .map(account -> {
+                    kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + account.getId());
+                    return true;
+                })
+                .orElseGet(() -> {
+                    log.info("Activating account failed: {}", username);
+                    return false;
+                });
     }
+
 
     /**
      * @param request
@@ -107,7 +111,7 @@ public class AuthServiceImpl implements AuthService {
                     .expiresIn(jwtUtils.getExpirationTimeToken())
                     .build();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Loi khi dang nhap: {}", ExceptionUtils.getStackTrace(e));
             return null;
         }
     }
@@ -124,7 +128,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             return jwtUtils.validateToken(token, username);
         } catch (Exception e) {
-            log.error("Lỗi khi xác thực token: {}", e.getMessage());
+            log.error("Lỗi khi xác thực token: {}", ExceptionUtils.getStackTrace(e));
             return false;
         }
     }

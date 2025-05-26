@@ -7,7 +7,7 @@ import com.lucas.service.model.request.TokenValidationRequest;
 import com.lucas.service.service.AuthService;
 import com.lucas.service.utils.ResponseUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-@Slf4j
+@Log4j2
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {

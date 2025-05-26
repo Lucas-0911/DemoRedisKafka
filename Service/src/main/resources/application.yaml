@@ -31,12 +31,7 @@ spring:
     serialization:
       indent-output: true
 
-  # Redis server connection settings
-  #  data:
-  #    redis:
-  #      host: redis-12754.c1.ap-southeast-1-1.ec2.redns.redis-cloud.com # Host of the Redis server
-  #      port: 12754 # Port of the Redis server for connection
-  #      password: "eV1rqBUEPzcZd1WJoZZwV9tbwZLhRJTe"  # Password for connecting to the Redis server (default is empty)
+  # Redis
   data:
     redis:
       host: 127.0.0.1 # Host of the Redis server
@@ -45,8 +40,7 @@ spring:
 
   #Kafka
   kafka:
-    bootstrap-servers: 192.168.1.126:9193
-    #    bootstrap-servers: 192.168.100.222:9193
+    bootstrap-servers: 192.168.100.228:9193
     producer:
       retries: 0
       batch-size: 16384
@@ -77,3 +71,4 @@ jwt:
 rsa:
   private-key: classpath:certs/private.pem
   public-key: classpath:certs/public.pem
+#classpath:certs/

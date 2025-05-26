@@ -4,14 +4,14 @@ import com.lucas.worker.entity.Accounts;
 import com.lucas.worker.utils.RedisUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
-@Slf4j
+@Log4j2
 @Component
 public class WorkerConsumer {
 
