@@ -98,7 +98,6 @@
             <version>2.1</version>
         </dependency>
 
-        <!-- Thay thế dependency hiện tại -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -128,6 +127,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>
+        </dependency>
+
+        <!--Common-->
+        <dependency>
+            <groupId>com.lucas.common</groupId>
+            <artifactId>Common</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

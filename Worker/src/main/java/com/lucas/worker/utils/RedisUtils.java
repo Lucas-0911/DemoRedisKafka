@@ -3,12 +3,15 @@ package com.lucas.worker.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
+@Log4j2
 @Component
 public class RedisUtils {
 
@@ -22,7 +25,7 @@ public class RedisUtils {
         try {
             redisTemplate.opsForValue().set(key, value);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -39,6 +42,7 @@ public class RedisUtils {
                 ObjectMapper objectMapper = new ObjectMapper();
                 return objectMapper.convertValue(result, targetClass);
             } catch (IllegalArgumentException e) {
+                log.error(ExceptionUtils.getStackTrace(e));
                 // log.error("Error converting LinkedHashMap to object: {}", e.getMessage());
                 return null;
             }
@@ -50,6 +54,7 @@ public class RedisUtils {
                 ObjectMapper objectMapper = new ObjectMapper();
                 return objectMapper.readValue((String) result, targetClass);
             } catch (JsonProcessingException e) {
+                log.error(ExceptionUtils.getStackTrace(e));
                 //  log.error("Error deserializing JSON to object: {}", e.getMessage());
                 return null;
             }
@@ -57,6 +62,7 @@ public class RedisUtils {
 
         return null;
     }
+
     public void delete(String key) {
         redisTemplate.delete(key);
     }

@@ -36,3 +36,5 @@ mvnw.cmd
 mvnw
 .gitattributes
 .mvn
+
+src/main/test

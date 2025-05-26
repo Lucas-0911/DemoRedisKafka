@@ -5,6 +5,7 @@ import com.lucas.worker.utils.RedisUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,7 @@ public class WorkerConsumer {
             redisUtils.setObject(key, accountUpdate);
             log.info("Updated record count: {}", accountUpdate);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(ExceptionUtils.getStackTrace(e));
         }
     }
 }

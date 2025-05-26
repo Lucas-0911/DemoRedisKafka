@@ -1,12 +1,12 @@
 package com.lucas.service.service.impl;
 
+import com.lucas.common.redis.RedisUtils;
 import com.lucas.service.model.dto.TokenDTO;
 import com.lucas.service.model.entity.Accounts;
 import com.lucas.service.model.request.AccountSignupRequest;
 import com.lucas.service.repository.AuthRepository;
 import com.lucas.service.service.AuthService;
 import com.lucas.service.utils.JWTUtils;
-import com.lucas.service.utils.RedisUtils;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,14 +25,16 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-    @Autowired
-    private RedisUtils redisUtils;
+//    @Autowired
+//    private RedisUtils redisUtils;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JWTUtils jwtUtils;
+
+    private final RedisUtils redisUtils = new RedisUtils();
 
     @Override
     public boolean createAccount(AccountSignupRequest accountSignupRequest) {
@@ -53,7 +55,6 @@ public class AuthServiceImpl implements AuthService {
             log.info("Create account success : {}", createAccount);
             //Set redis
             redisUtils.setObject("ACCOUNT:" + createAccount.getId(), createAccount);
-
             return true;
         } catch (Exception e) {
             log.error("Loi khi tao tai khoan: {}", ExceptionUtils.getStackTrace(e));
