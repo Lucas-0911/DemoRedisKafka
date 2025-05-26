@@ -37,4 +37,4 @@ mvnw
 .gitattributes
 .mvn
 
-src/main/test
+src/test
