@@ -35,7 +35,7 @@ build/
 .mvn
 
 ## Cert
-src/main/resources/certs
+#src/main/resources/certs
 
 mvnw.cmd
 mvnw

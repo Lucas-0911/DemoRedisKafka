@@ -28,7 +28,8 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<ResponseDTO<Boolean>> signup(@RequestBody AccountSignupRequest request, HttpServletRequest httpRequest) {
         boolean result = authService.createAccount(request);
-
+        //Lay ra thoi gian hien tai
+        long start = System.currentTimeMillis();
         if (result) {
             return ResponseUtils.success(true, "Đăng ký tài khoản thành công", httpRequest);
         } else {
