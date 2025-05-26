@@ -10,12 +10,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -36,8 +36,10 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/active/{username}")
-    public ResponseEntity<ResponseDTO<Boolean>> activeAccount(@PathVariable String username, HttpServletRequest request) {
+    // doi sang post
+    @PostMapping("/active")
+    public ResponseEntity<ResponseDTO<Boolean>> activeAccount(@RequestBody Map<String, String> body, HttpServletRequest request) {
+        String username = body.get("username");
         boolean result = authService.activeAccount(username);
 
         if (result) {
@@ -61,8 +63,6 @@ public class AuthController {
     // Thêm endpoint này vào AuthController
     @PostMapping("/validate-token")
     public ResponseEntity<ResponseDTO<Boolean>> validateToken(@RequestBody TokenValidationRequest request, HttpServletRequest httpRequest) {
-        log.info("Request: {}", request);
-
         boolean isValid = authService.validateToken(request.getToken(), request.getUsername());
 
         if (isValid) {

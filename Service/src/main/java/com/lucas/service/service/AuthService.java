@@ -10,6 +10,5 @@ public interface AuthService {
 
     TokenDTO login(AccountSignupRequest request);
     
-    // Thêm phương thức này vào interface
     boolean validateToken(String token, String username);
 }

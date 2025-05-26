@@ -5,33 +5,19 @@ import com.lucas.service.model.entity.Accounts;
 import com.lucas.service.model.request.AccountSignupRequest;
 import com.lucas.service.repository.AuthRepository;
 import com.lucas.service.service.AuthService;
+import com.lucas.service.utils.JWTUtils;
 import com.lucas.service.utils.RedisUtils;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    @Value("${jwt.expirationTimeToken}")
-    private long expirationTimeToken;
-
-    @Value("${jwt.expirationTimeRefreshToken}")
-    private long expirationTimeRefreshToken;
 
     @Autowired
     private AuthRepository authRepository;
@@ -46,10 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private RSAPrivateKey rsaPrivateKey;
-
-    @Autowired
-    private RSAPublicKey rsaPublicKey;
+    private JWTUtils jwtUtils;
 
     @Override
     public boolean createAccount(AccountSignupRequest accountSignupRequest) {
@@ -89,7 +72,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     *
      * @param request
      * @return TokenDTO
      */
@@ -110,72 +92,29 @@ public class AuthServiceImpl implements AuthService {
             }
 
             // Tạo token và refresh token
-            String accessToken = generateAccessToken(account);
-            String refreshToken = generateRefreshToken(account);
+            String accessToken = jwtUtils.generateAccessToken(account);
+            String refreshToken = jwtUtils.generateRefreshToken(account);
 
             // Lưu refresh token vào Redis để quản lý
             String redisKey = "REFRESH_TOKEN:" + account.getUsername();
-            redisUtils.setObject(redisKey, refreshToken, 7 * 24 * 60 * 60);
+            redisUtils.setObject(redisKey, refreshToken, jwtUtils.getExpirationTimeToken());
 
             // Trả về response
             return TokenDTO.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .tokenType("Bearer")
-                    .expiresIn(24 * 60 * 60) // 24 giờ (tính bằng giây)
+                    .expiresIn(jwtUtils.getExpirationTimeToken())
                     .build();
         } catch (Exception e) {
-            log.error("Lỗi khi đăng nhập: {}", e.getMessage());
             e.printStackTrace();
             return null;
         }
     }
 
     /**
-     *
-     * @param account
-     * @return token
-     */
-    private String generateAccessToken(Accounts account) {
-
-        Date expirationDate = new Date(System.currentTimeMillis() + expirationTimeToken);
-
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("username", account.getUsername());
-        claims.put("password", account.getPassword());
-        claims.put("userId", account.getId());
-
-        // Tạo JWT token
-        return Jwts.builder()
-                .setSubject(account.getUsername())
-                .setIssuedAt(new Date())
-                .setExpiration(expirationDate)
-                .setClaims(claims)
-                .signWith(SignatureAlgorithm.RS256, rsaPrivateKey)
-                .compact();
-    }
-
-    /**
-     * generateRefreshToken
-     * @param account
-     * @return refreshToken
-     */
-    private String generateRefreshToken(Accounts account) {
-        Date expirationDate = new Date(System.currentTimeMillis() + expirationTimeRefreshToken);
-
-        // Tạo JWT token
-        return Jwts.builder()
-                .setSubject(account.getUsername())
-                .setIssuedAt(new Date())
-                .setExpiration(expirationDate)
-                .claim("tokenType", "refresh")
-                .signWith(SignatureAlgorithm.RS256, rsaPrivateKey)
-                .compact();
-    }
-
-
-    /**
      * validate token jwt
+     *
      * @param token
      * @param username
      * @return boolean
@@ -183,15 +122,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean validateToken(String token, String username) {
         try {
-            // Xác thực token bằng khóa công khai
-            Claims claims = Jwts.parser()
-                    .setSigningKey(rsaPublicKey)
-                    .parseClaimsJws(token)
-                    .getBody();
-
-            // Kiểm tra username trong token có khớp với username được cung cấp không
-            String tokenUsername = (String) claims.get("username");
-            return username.equals(tokenUsername);
+            return jwtUtils.validateToken(token, username);
         } catch (Exception e) {
             log.error("Lỗi khi xác thực token: {}", e.getMessage());
             return false;

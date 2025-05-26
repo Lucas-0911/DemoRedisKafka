@@ -32,6 +32,7 @@ public class RedisUtils {
             return null;
         }
         // Nếu kết quả là một LinkedHashMap
+        // Tach map , list, instance
         if (result instanceof Map) {
             try {
                 // Chuyển đổi LinkedHashMap thành đối tượng mục tiêu
