@@ -50,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
 
             createAccount = authRepository.save(createAccount);
 
+            log.info("Create account success : {}", createAccount);
             //Set redis
             redisUtils.setObject("ACCOUNT:" + createAccount.getId(), createAccount);
 
@@ -66,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
         return authRepository.findByUsername(username)
                 .map(account -> {
                     kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + account.getId());
+                    log.info("Activate account success : {}", account);
                     return true;
                 })
                 .orElseGet(() -> {
@@ -82,6 +84,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenDTO login(AccountSignupRequest request) {
         try {
+            log.info("Login account : {}", request);
             // Kiểm tra username và password
             Accounts account = authRepository.findByUsername(request.getUsername()).orElse(null);
 
@@ -103,13 +106,16 @@ public class AuthServiceImpl implements AuthService {
             String redisKey = "REFRESH_TOKEN:" + account.getUsername();
             redisUtils.setObject(redisKey, refreshToken, jwtUtils.getExpirationTimeToken());
 
-            // Trả về response
-            return TokenDTO.builder()
+            TokenDTO tokenDTO = TokenDTO.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .tokenType("Bearer")
                     .expiresIn(jwtUtils.getExpirationTimeToken())
                     .build();
+
+            log.info("Login account success : {}", tokenDTO);
+            // Trả về response
+            return tokenDTO;
         } catch (Exception e) {
             log.error("Loi khi dang nhap: {}", ExceptionUtils.getStackTrace(e));
             return null;
@@ -126,6 +132,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean validateToken(String token, String username) {
         try {
+            log.info("Validate token: {}, username : {}", token, username);
             return jwtUtils.validateToken(token, username);
         } catch (Exception e) {
             log.error("Lỗi khi xác thực token: {}", ExceptionUtils.getStackTrace(e));
