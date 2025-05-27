@@ -1,7 +1,7 @@
 package com.lucas.worker.consumer;
 
+import com.lucas.common.redis.RedisUtils;
 import com.lucas.worker.entity.Accounts;
-import com.lucas.worker.utils.RedisUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
@@ -19,17 +19,22 @@ public class WorkerConsumer {
     @Autowired
     private EntityManager entityManager;
 
-    @Autowired
-    private RedisUtils redisUtils;
-
     @Transactional
     @KafkaListener(topics = "ACCOUNTS", groupId = "demoRedisKafka")
     public void workerConsumerProcess(String key) {
         log.info("WorkerConsumer process key: {}", key);
 
-        Accounts entity = redisUtils.getObject(key, Accounts.class);
+        Accounts entity = RedisUtils.getObject(key, Accounts.class);
+
+        if (entity == null) {
+            log.error("WorkerConsumer process key: {} is null", key);
+            return;
+        }
+
         log.info("Entity: {}", entity);
-        redisUtils.delete(key);
+
+        RedisUtils.delete(key);
+
         try {
             String sql = "UPDATE `accounts` SET status = ?, updated = ? WHERE id = ?";
 
@@ -40,7 +45,9 @@ public class WorkerConsumer {
                     .executeUpdate();
 
             Accounts accountUpdate = entityManager.find(Accounts.class, entity.getId());
-            redisUtils.setObject(key, accountUpdate);
+
+            RedisUtils.setObject(key, accountUpdate);
+
             log.info("Updated record count: {}", accountUpdate);
         } catch (Exception e) {
             log.error(ExceptionUtils.getStackTrace(e));

@@ -14,6 +14,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Log4j2
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -24,9 +26,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
-
-//    @Autowired
-//    private RedisUtils redisUtils;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -39,10 +38,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean createAccount(AccountSignupRequest accountSignupRequest) {
         try {
-            log.info("Create account : {}", accountSignupRequest);
+            log.info("Create account : {}", accountSignupRequest.getUsername());
             //Todo: Check is exits by username in redis
-
-            // Mã hóa mật khẩu trước khi lưu vào database
+            
             String encodedPassword = passwordEncoder.encode(accountSignupRequest.getPassword());
 
             Accounts createAccount = Accounts.builder()
@@ -52,7 +50,8 @@ public class AuthServiceImpl implements AuthService {
 
             createAccount = authRepository.save(createAccount);
 
-            log.info("Create account success : {}", createAccount);
+            log.info("Create account success : {}", createAccount.getUsername());
+
             //Set redis
             redisUtils.setObject("ACCOUNT:" + createAccount.getId(), createAccount);
             return true;
@@ -65,16 +64,18 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean activeAccount(String username) {
         log.info("Activating account: {}", username);
-        return authRepository.findByUsername(username)
-                .map(account -> {
-                    kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + account.getId());
-                    log.info("Activate account success : {}", account);
-                    return true;
-                })
-                .orElseGet(() -> {
-                    log.info("Activating account failed: {}", username);
-                    return false;
-                });
+
+        Optional<Accounts> account = authRepository.findByUsername(username);
+        if (account.isPresent()) {
+            Accounts activeAccount = account.get();
+            kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + activeAccount.getId());
+            log.info("Activate account success : {}", username);
+            return true;
+        } else {
+            log.info("Activating account failed: {}", username);
+            return false;
+        }
+
     }
 
 
@@ -95,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
 
             // Kiểm tra trạng thái tài khoản
             if (account.getStatus() == Accounts.Status.CREATE) {
-                log.error("Tài khoản chưa được kích hoạt: {}", request.getUsername());
+                log.error("Account is not active: {}", request.getUsername());
                 return null;
             }
 
@@ -105,7 +106,7 @@ public class AuthServiceImpl implements AuthService {
 
             // Lưu refresh token vào Redis để quản lý
             String redisKey = "REFRESH_TOKEN:" + account.getUsername();
-            redisUtils.setObject(redisKey, refreshToken, jwtUtils.getExpirationTimeToken());
+            redisUtils.setObject(redisKey, refreshToken, jwtUtils.getExpirationTimeRefreshToken());
 
             TokenDTO tokenDTO = TokenDTO.builder()
                     .accessToken(accessToken)
@@ -114,11 +115,11 @@ public class AuthServiceImpl implements AuthService {
                     .expiresIn(jwtUtils.getExpirationTimeToken())
                     .build();
 
-            log.info("Login account success : {}", tokenDTO);
-            // Trả về response
+            log.info("Login account success : {}", request.getUsername());
+
             return tokenDTO;
         } catch (Exception e) {
-            log.error("Loi khi dang nhap: {}", ExceptionUtils.getStackTrace(e));
+            log.error("Login account fail : {}", ExceptionUtils.getStackTrace(e));
             return null;
         }
     }
@@ -133,10 +134,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean validateToken(String token, String username) {
         try {
-            log.info("Validate token: {}, username : {}", token, username);
-            return jwtUtils.validateToken(token, username);
+            log.info("Validate username : {}", username);
+            jwtUtils.validateToken(token, username);
+            log.info("Validate token success : {}", username);
+
+            return true;
         } catch (Exception e) {
-            log.error("Lỗi khi xác thực token: {}", ExceptionUtils.getStackTrace(e));
+            log.error("Error validate token: {}", ExceptionUtils.getStackTrace(e));
             return false;
         }
     }

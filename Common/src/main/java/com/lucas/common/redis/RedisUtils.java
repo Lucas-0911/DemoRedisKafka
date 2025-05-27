@@ -13,7 +13,7 @@ public class RedisUtils {
     private static final Logger log = LogManager.getLogger(RedisUtils.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public void setObject(String key, Object value) {
+    public static void setObject(String key, Object value) {
         if (key == null) return;
 
         Jedis jedis = null;
@@ -43,7 +43,7 @@ public class RedisUtils {
         }
     }
 
-    public <T> T getObject(String key, Class<T> targetClass) {
+    public static <T> T getObject(String key, Class<T> targetClass) {
         if (key == null) return null;
 
         Jedis jedis = null;
@@ -63,6 +63,19 @@ public class RedisUtils {
         } catch (Exception e) {
             log.error("Redis getObject error: {}", ExceptionUtils.getStackTrace(e));
             return null;
+        } finally {
+            RedisConnection.closeConnection(jedis);
+        }
+    }
+
+    public static void delete(String key) {
+        if (key == null) return;
+        Jedis jedis = null;
+        try {
+            jedis = RedisConnection.getConnection();
+            jedis.del(key);
+        } catch (Exception e) {
+            log.error("Redis delObject error: {}", ExceptionUtils.getStackTrace(e));
         } finally {
             RedisConnection.closeConnection(jedis);
         }
