@@ -40,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             log.info("Create account : {}", accountSignupRequest.getUsername());
             //Todo: Check is exits by username in redis
-            
+
             String encodedPassword = passwordEncoder.encode(accountSignupRequest.getPassword());
 
             Accounts createAccount = Accounts.builder()
@@ -135,10 +135,7 @@ public class AuthServiceImpl implements AuthService {
     public boolean validateToken(String token, String username) {
         try {
             log.info("Validate username : {}", username);
-            jwtUtils.validateToken(token, username);
-            log.info("Validate token success : {}", username);
-
-            return true;
+            return jwtUtils.validateToken(token, username);
         } catch (Exception e) {
             log.error("Error validate token: {}", ExceptionUtils.getStackTrace(e));
             return false;

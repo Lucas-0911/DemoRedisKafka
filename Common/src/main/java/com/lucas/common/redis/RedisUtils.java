@@ -6,8 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import redis.clients.jedis.Jedis;
 
-import java.util.Map;
-
 public class RedisUtils {
 
     private static final Logger log = LogManager.getLogger(RedisUtils.class);
@@ -51,15 +49,9 @@ public class RedisUtils {
             jedis = RedisConnection.getConnection();
             String jsonValue = jedis.get(key);
             if (jsonValue == null) return null;
-            Object result = objectMapper.readValue(jsonValue, targetClass);
-            if (result instanceof Map) {
-                return objectMapper.convertValue(result, targetClass);
-            }
 
-            if (result instanceof String) {
-                return objectMapper.readValue((String) result, targetClass);
-            }
-            return null;
+            return objectMapper.convertValue(jsonValue, targetClass);
+
         } catch (Exception e) {
             log.error("Redis getObject error: {}", ExceptionUtils.getStackTrace(e));
             return null;
