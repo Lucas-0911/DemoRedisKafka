@@ -26,7 +26,7 @@ public class RedisUtils {
         }
     }
 
-    public void setObject(String key, Object value, long timeoutSeconds) {
+    public static void setObject(String key, Object value, long timeoutSeconds) {
         if (key == null) return;
 
         Jedis jedis = null;
@@ -50,7 +50,7 @@ public class RedisUtils {
             String jsonValue = jedis.get(key);
             if (jsonValue == null) return null;
 
-            return objectMapper.convertValue(jsonValue, targetClass);
+            return objectMapper.readValue(jsonValue, targetClass);
 
         } catch (Exception e) {
             log.error("Redis getObject error: {}", ExceptionUtils.getStackTrace(e));

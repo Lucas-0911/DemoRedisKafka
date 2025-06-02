@@ -24,6 +24,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
 
   # Time
   jackson:
@@ -39,29 +40,46 @@ spring:
       password: ""  # Password for connecting to the Redis server (default is empty)
 
   #Kafka
+  #  kafka:
+  #    bootstrap-servers: 192.168.100.222:9193
+  #    producer:
+  #      retries: 0
+  #      batch-size: 16384
+  #      buffer-memory: 33554432
+  #      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+  #      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  #    consumer:
+  #      group-id: demoRedisKafka
+  #      auto-offset-reset: earliest
+  #      enable-auto-commit: false
+  #      auto-commit-interval: 100
+  #      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  #      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+  #      properties:
+  #        spring.json.trusted.packages: "*"
+
   kafka:
-    bootstrap-servers: 192.168.100.228:9193
+    bootstrap-servers: 192.168.1.108:9193 #Todo: Sua lai ip
     producer:
-      retries: 0
-      batch-size: 16384
-      buffer-memory: 33554432
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
-      group-id: demoRedisKafka
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      auto-commit-interval: 100
+      group-id: synchronous-kafka-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+    properties:
+      allow:
+        auto:
+          create:
+            topics: true
 
 logging:
   level:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-
+    org.springframework.boot.context.properties: DEBUG
 
 jwt:
   expire:
@@ -71,4 +89,11 @@ jwt:
 rsa:
   private-key: classpath:certs/private.pem
   public-key: classpath:certs/public.pem
-#classpath:certs/
+
+com:
+  lucas:
+    kafka:
+      synchronous:
+        requestTopic: dispatch-request
+        replyTopic: dispatch-response
+        replyTimeout: 30s

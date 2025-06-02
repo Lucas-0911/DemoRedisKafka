@@ -1,6 +1,9 @@
 package com.lucas.service.service.impl;
 
 import com.lucas.common.redis.RedisUtils;
+import com.lucas.configservice.config.SynchronousKafkaProperties;
+import com.lucas.configservice.dto.DispatchRequest;
+import com.lucas.configservice.dto.DispatchResponse;
 import com.lucas.service.model.dto.TokenDTO;
 import com.lucas.service.model.entity.Accounts;
 import com.lucas.service.model.request.AccountSignupRequest;
@@ -9,23 +12,32 @@ import com.lucas.service.service.AuthService;
 import com.lucas.service.utils.JWTUtils;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
+import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 @Log4j2
 @Service
+@EnableConfigurationProperties(SynchronousKafkaProperties.class)
 public class AuthServiceImpl implements AuthService {
 
+    private final SynchronousKafkaProperties synchronousKafkaProperties;
+    private final ReplyingKafkaTemplate<String, DispatchRequest, DispatchResponse> replyingKafkaTemplate;
+
+    public AuthServiceImpl(SynchronousKafkaProperties synchronousKafkaProperties, ReplyingKafkaTemplate<String, DispatchRequest, DispatchResponse> replyingKafkaTemplate) {
+        this.synchronousKafkaProperties = synchronousKafkaProperties;
+        this.replyingKafkaTemplate = replyingKafkaTemplate;
+    }
 
     @Autowired
     private AuthRepository authRepository;
-
-    @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -33,13 +45,15 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private JWTUtils jwtUtils;
 
-    private final RedisUtils redisUtils = new RedisUtils();
-
     @Override
     public boolean createAccount(AccountSignupRequest accountSignupRequest) {
         try {
             log.info("Create account : {}", accountSignupRequest.getUsername());
-            //Todo: Check is exits by username in redis
+            Accounts accounts = RedisUtils.getObject(genAccountKey(accountSignupRequest.getUsername()), Accounts.class);
+            if (accounts != null) {
+                log.error("Create account failed. Account {} already exists.", accountSignupRequest.getUsername());
+                return false;
+            }
 
             String encodedPassword = passwordEncoder.encode(accountSignupRequest.getPassword());
 
@@ -53,34 +67,39 @@ public class AuthServiceImpl implements AuthService {
             log.info("Create account success : {}", createAccount.getUsername());
 
             //Set redis
-            redisUtils.setObject("ACCOUNT:" + createAccount.getId(), createAccount);
+            RedisUtils.setObject(genAccountKey(createAccount.getUsername()), createAccount);
             return true;
         } catch (Exception e) {
-            log.error("Loi khi tao tai khoan: {}", ExceptionUtils.getStackTrace(e));
+            log.error("Error create account: {}", ExceptionUtils.getStackTrace(e));
             return false;
         }
     }
 
     @Override
-    public boolean activeAccount(String username) {
+    public boolean activeAccount(String username) throws ExecutionException, InterruptedException {
         log.info("Activating account: {}", username);
 
         Optional<Accounts> account = authRepository.findByUsername(username);
         if (account.isPresent()) {
             Accounts activeAccount = account.get();
-            kafkaTemplate.send("ACCOUNTS", "ACCOUNT:" + activeAccount.getId());
+            String requestTopic = synchronousKafkaProperties.getRequestTopic();
+            DispatchRequest request = new DispatchRequest(genAccountKey(activeAccount.getUsername()));
+            ProducerRecord<String, DispatchRequest> producerRecord = new ProducerRecord<>(requestTopic, request);
+            RequestReplyFuture<String, DispatchRequest, DispatchResponse> requestReplyFuture = replyingKafkaTemplate.sendAndReceive(producerRecord);
+
+            DispatchResponse response = requestReplyFuture.get().value();
+            log.info(response);
             log.info("Activate account success : {}", username);
             return true;
         } else {
-            log.info("Activating account failed: {}", username);
+            log.info("Account is not exits : {}", username);
             return false;
         }
 
     }
 
-
     /**
-     * @param request
+     * @param request AccountSignupRequest
      * @return TokenDTO
      */
     @Override
@@ -106,14 +125,9 @@ public class AuthServiceImpl implements AuthService {
 
             // Lưu refresh token vào Redis để quản lý
             String redisKey = "REFRESH_TOKEN:" + account.getUsername();
-            redisUtils.setObject(redisKey, refreshToken, jwtUtils.getExpirationTimeRefreshToken());
+            RedisUtils.setObject(redisKey, refreshToken, jwtUtils.getExpirationTimeRefreshToken());
 
-            TokenDTO tokenDTO = TokenDTO.builder()
-                    .accessToken(accessToken)
-                    .refreshToken(refreshToken)
-                    .tokenType("Bearer")
-                    .expiresIn(jwtUtils.getExpirationTimeToken())
-                    .build();
+            TokenDTO tokenDTO = TokenDTO.builder().accessToken(accessToken).refreshToken(refreshToken).tokenType("Bearer").expiresIn(jwtUtils.getExpirationTimeToken()).build();
 
             log.info("Login account success : {}", request.getUsername());
 
@@ -140,5 +154,9 @@ public class AuthServiceImpl implements AuthService {
             log.error("Error validate token: {}", ExceptionUtils.getStackTrace(e));
             return false;
         }
+    }
+
+    private String genAccountKey(String username) {
+        return "ACCOUNT:" + username;
     }
 }

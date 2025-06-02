@@ -3,7 +3,7 @@ package com.lucas.service;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.lucas.service", "com.lucas.configservice"})
 public class ServiceApplication {
 
     public static void main(String[] args) {

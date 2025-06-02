@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 @Log4j2
 @RestController
@@ -28,8 +29,6 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<ResponseDTO<Boolean>> signup(@RequestBody AccountSignupRequest request, HttpServletRequest httpRequest) {
         boolean result = authService.createAccount(request);
-        //Lay ra thoi gian hien tai
-        long start = System.currentTimeMillis();
         if (result) {
             return ResponseUtils.success(true, "Đăng ký tài khoản thành công", httpRequest);
         } else {
@@ -37,9 +36,8 @@ public class AuthController {
         }
     }
 
-    // doi sang post
     @PostMapping("/active")
-    public ResponseEntity<ResponseDTO<Boolean>> activeAccount(@RequestBody Map<String, String> body, HttpServletRequest request) {
+    public ResponseEntity<ResponseDTO<Boolean>> activeAccount(@RequestBody Map<String, String> body, HttpServletRequest request) throws ExecutionException, InterruptedException {
         String username = body.get("username");
         boolean result = authService.activeAccount(username);
 
