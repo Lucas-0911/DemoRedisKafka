@@ -27,12 +27,25 @@ public class WorkerConsumer {
     @KafkaListener(topics = "${com.lucas.kafka.synchronous.requestTopic}", groupId = "${spring.kafka.consumer.group-id}")
     public DispatchResponse workerConsumerProcess(DispatchRequest key) {
         log.info("WorkerConsumer process key: {}", key.content());
-
         Accounts entity = RedisUtils.getObject(key.content(), Accounts.class);
 
         if (entity == null) {
             log.error("WorkerConsumer process key: {} is null", key);
-            return new DispatchResponse("WorkerConsumer process key: " + key + " is null");
+            String sql = "SELECT * FROM `accounts` WHERE `id` = ?";
+            try {
+                Accounts account = (Accounts) entityManager.createNativeQuery(sql, Accounts.class)
+                        .setParameter(1, key.id())
+                        .getSingleResult();
+
+                if (account == null) {
+                    return new DispatchResponse("WorkerConsumer process key: " + key + " is null", false);
+                }
+
+                entity = account;
+            } catch (Exception e) {
+                log.error(ExceptionUtils.getStackTrace(e));
+                return new DispatchResponse("WorkerConsumer process key: " + key + " is null", false);
+            }
         }
 
         log.info("Entity: {}", entity);
@@ -42,7 +55,11 @@ public class WorkerConsumer {
         try {
             String sql = "UPDATE `accounts` SET status = ?, updated = ? WHERE id = ?";
 
-            entityManager.createNativeQuery(sql).setParameter(1, 1).setParameter(2, new Date()).setParameter(3, entity.getId()).executeUpdate();
+            entityManager.createNativeQuery(sql)
+                    .setParameter(1, 1)
+                    .setParameter(2, new Date())
+                    .setParameter(3, entity.getId())
+                    .executeUpdate();
 
             Accounts accountUpdate = entityManager.find(Accounts.class, entity.getId());
 
@@ -51,8 +68,9 @@ public class WorkerConsumer {
             log.info("Updated record count: {}", accountUpdate);
         } catch (Exception e) {
             log.error(ExceptionUtils.getStackTrace(e));
-            return new DispatchResponse("Error WorkerConsumer process key: " + key);
+            return new DispatchResponse("Error WorkerConsumer process key: " + key, false);
         }
-        return new DispatchResponse("WorkerConsumer process key: " + key);
+
+        return new DispatchResponse("WorkerConsumer process success key: " + key, true);
     }
 }

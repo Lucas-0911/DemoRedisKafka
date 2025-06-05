@@ -1,4 +1,4 @@
-package com.lucas.service.config;
+package com.lucas.service.config.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

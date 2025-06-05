@@ -1,4 +1,4 @@
 package com.lucas.configservice.dto;
 
-public record DispatchResponse(String content) {
+public record DispatchResponse(String message, boolean isSuccess) {
 }

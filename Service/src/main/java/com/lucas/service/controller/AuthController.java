@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 @Log4j2
 @RestController
@@ -37,7 +36,7 @@ public class AuthController {
     }
 
     @PostMapping("/active")
-    public ResponseEntity<ResponseDTO<Boolean>> activeAccount(@RequestBody Map<String, String> body, HttpServletRequest request) throws ExecutionException, InterruptedException {
+    public ResponseEntity<ResponseDTO<Boolean>> activeAccount(@RequestBody Map<String, String> body, HttpServletRequest request) {
         String username = body.get("username");
         boolean result = authService.activeAccount(username);
 

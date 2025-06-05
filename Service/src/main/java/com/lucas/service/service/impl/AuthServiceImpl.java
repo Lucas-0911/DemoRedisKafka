@@ -21,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 @Log4j2
 @Service
@@ -59,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
 
             Accounts createAccount = Accounts.builder()
                     .username(accountSignupRequest.getUsername())
-                    .password(encodedPassword) // Sử dụng mật khẩu đã mã hóa
+                    .password(encodedPassword)
                     .build();
 
             createAccount = authRepository.save(createAccount);
@@ -71,26 +70,37 @@ public class AuthServiceImpl implements AuthService {
             return true;
         } catch (Exception e) {
             log.error("Error create account: {}", ExceptionUtils.getStackTrace(e));
-            return false;
+            throw new RuntimeException("Error create account: " + ExceptionUtils.getStackTrace(e));
+
         }
     }
 
     @Override
-    public boolean activeAccount(String username) throws ExecutionException, InterruptedException {
+    public boolean activeAccount(String username) {
         log.info("Activating account: {}", username);
 
         Optional<Accounts> account = authRepository.findByUsername(username);
         if (account.isPresent()) {
-            Accounts activeAccount = account.get();
-            String requestTopic = synchronousKafkaProperties.getRequestTopic();
-            DispatchRequest request = new DispatchRequest(genAccountKey(activeAccount.getUsername()));
-            ProducerRecord<String, DispatchRequest> producerRecord = new ProducerRecord<>(requestTopic, request);
-            RequestReplyFuture<String, DispatchRequest, DispatchResponse> requestReplyFuture = replyingKafkaTemplate.sendAndReceive(producerRecord);
+            try {
+                Accounts activeAccount = account.get();
+                String requestTopic = synchronousKafkaProperties.getRequestTopic();
 
-            DispatchResponse response = requestReplyFuture.get().value();
-            log.info(response);
-            log.info("Activate account success : {}", username);
-            return true;
+                DispatchRequest request = new DispatchRequest(genAccountKey(activeAccount.getUsername()), activeAccount.getId());
+                ProducerRecord<String, DispatchRequest> producerRecord = new ProducerRecord<>(requestTopic, request);
+                RequestReplyFuture<String, DispatchRequest, DispatchResponse> requestReplyFuture = replyingKafkaTemplate.sendAndReceive(producerRecord);
+
+                DispatchResponse response = requestReplyFuture.get().value();
+
+                if (!response.isSuccess()) {
+                    throw new RuntimeException("Active account fail." + response.message());
+                }
+
+                log.info("Activate account success : {}", username);
+                return true;
+            } catch (Exception e) {
+                log.error("Error activating account: {}", ExceptionUtils.getStackTrace(e));
+                throw new RuntimeException("Error activating account: " + ExceptionUtils.getStackTrace(e));
+            }
         } else {
             log.info("Account is not exits : {}", username);
             return false;
@@ -106,6 +116,7 @@ public class AuthServiceImpl implements AuthService {
     public TokenDTO login(AccountSignupRequest request) {
         try {
             log.info("Login account : {}", request);
+
             // Kiểm tra username và password
             Accounts account = authRepository.findByUsername(request.getUsername()).orElse(null);
 
@@ -127,14 +138,19 @@ public class AuthServiceImpl implements AuthService {
             String redisKey = "REFRESH_TOKEN:" + account.getUsername();
             RedisUtils.setObject(redisKey, refreshToken, jwtUtils.getExpirationTimeRefreshToken());
 
-            TokenDTO tokenDTO = TokenDTO.builder().accessToken(accessToken).refreshToken(refreshToken).tokenType("Bearer").expiresIn(jwtUtils.getExpirationTimeToken()).build();
+            TokenDTO tokenDTO = TokenDTO.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(jwtUtils.getExpirationTimeToken())
+                    .build();
 
             log.info("Login account success : {}", request.getUsername());
 
             return tokenDTO;
         } catch (Exception e) {
             log.error("Login account fail : {}", ExceptionUtils.getStackTrace(e));
-            return null;
+            throw new RuntimeException("Login account fail: " + ExceptionUtils.getStackTrace(e));
         }
     }
 
