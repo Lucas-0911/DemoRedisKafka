@@ -9,7 +9,8 @@ spring:
     hikari:
       maximum-pool-size: 10  # So luong toi da ket noi
       minimum-idle: 5        #  So luong ket noi toi thieu trong pool
-    url: jdbc:mysql://localhost:3316/demo-redis-kafka
+    #url: jdbc:mysql://localhost:3316/demo-redis-kafka
+    url: jdbc:mysql://14.225.36.39:3316/demo-redis-kafka
     username: root
     password: root1234
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -40,7 +41,8 @@ spring:
       password: ""  # Password for connecting to the Redis server (default is empty)
 
   kafka:
-    bootstrap-servers: 192.168.1.163:9193 #Todo: Sua lai ip
+    #bootstrap-servers: 192.168.1.163:9193
+    bootstrap-servers: 14.225.36.39:9193 #Todo: Sua lai ip
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
