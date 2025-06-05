@@ -42,3 +42,6 @@ mvnw
 .gitattributes
 
 src/main/test
+
+### Mac OS ###
+.DS_Store

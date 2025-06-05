@@ -38,3 +38,6 @@ enviroment/data
 .gitattributes
 
 logs
+
+### Mac OS ###
+.DS_Store

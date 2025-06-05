@@ -38,3 +38,6 @@ mvnw
 .mvn
 
 src/test
+
+### Mac OS ###
+.DS_Store
